@@ -73,18 +73,21 @@ void loop() {
     page = "config";
     myNextion.sendCommand("page config");
     myNextion.setComponentText("t0", String(target_temp, 0));
+    sleep_counter = 0;
   }
 
   if (message == "65 1 e 0 ffff ffff ffff" || message == "65 1 1 1 ffff ffff ffff") {
     page = "monitor";
     myNextion.sendCommand("page monitor");
     refreshAll();
+    sleep_counter = 0;
   }
 
   if (message.startsWith("68")) {
     myNextion.sendCommand("sleep=0");
     delay(250);
     sleep_counter = 0;
+    refreshAll();
   }
 
   if (message.startsWith("70")) {
@@ -110,9 +113,9 @@ void loop() {
       digitalWrite(RelayPin, heater);
       old_heater = heater;
     }
-    //updateSleep(30000); //sleep after 30 seconds
-  }
 
+  }
+  updateSleep(500); //turn off display after a few minutes
 }
 
 void updateDisplay(unsigned long timeOut) {
@@ -129,6 +132,7 @@ void updateSleep(unsigned long timeOut) {
   if (sleep_counter % timeOut == 0) {
     myNextion.sendCommand("page monitor");
     myNextion.sendCommand("sleep=1");
+    page = "monitor";
   }
 }
 
@@ -148,12 +152,12 @@ double getTemperature() {
 double heaterControl(double target, double current, double max_heater_time) {
   double temp_diff = target - current;
   double heat_time = map(temp_diff, 0, 50, 0, max_heater_time);
-  if (heat_time > max_heater_time){
+  if (heat_time > max_heater_time) {
     heat_time = max_heater_time;
-    }
+  }
   if (heat_time < min_relay_time) {
     heat_time = 0;
-    }
+  }
   return heat_time;
 }
 
@@ -162,7 +166,7 @@ void updateTemperature() {
   current_count = millis();
   if (current_count < on_count) {
     heater = true;
-  } else if ((current_count > on_count) && (current_count < max_time)){
+  } else if ((current_count > on_count) && (current_count < max_time)) {
     heater = false;
   } else if (current_count > max_time) {
     on_count = current_count + heaterControl(target_temp, current_temp, max_count);
